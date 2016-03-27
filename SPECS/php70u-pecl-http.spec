@@ -1,7 +1,14 @@
 %global pecl_name http
+%global proj_name pecl_http
 %global php_base php70u
 %global ini_name  40-%{pecl_name}.ini
 %global with_zts 0%{?__ztsphp:1}
+%ifarch %{arm}
+# Test suite disabled because of erratic results on slow ARM (timeout)
+%global with_tests 0%{?_with_tests:1}
+%else
+%global with_tests 0%{!?_without_tests:1}
+%endif
 
 Summary: Extended HTTP support
 Name: %{php_base}-pecl-%{pecl_name}
@@ -104,7 +111,7 @@ These are the files needed to compile programs using HTTP extension.
 
 %prep
 %setup -qc
-mv %{pecl_name}-%{version} NTS
+mv %{proj_name}-%{version}%{?prever} NTS
 
 %if %{with_zts}
 cp -r NTS ZTS
@@ -112,19 +119,28 @@ cp -r NTS ZTS
 
 
 %build
-pushd NTS
-phpize
-%{configure} --with-%{pecl_name}=%{prefix} --with-php-config=%{_bindir}/php-config
-%{__make}
-popd
+peclconf() {
+%configure \
+  --with-http \
+  --with-http-zlib-dir=%{_root_prefix} \
+  --with-http-libcurl-dir=%{_root_prefix} \
+  --with-http-libidn-dir=%{_root_prefix} \
+  --with-http-libevent-dir=%{_event_prefix} \
+  --with-libdir=%{_lib} \
+  --with-php-config=$1
+}
+cd NTS
+%{_bindir}/phpize
+peclconf %{_bindir}/php-config
+make %{?_smp_mflags}
 
 %if %{with_zts}
-pushd ZTS
-zts-phpize
-%{configure} --with-%{pecl_name}=%{prefix} --with-php-config=%{_bindir}/zts-php-config
-%{__make}
-popd
+cd ../ZTS
+%{_bindir}/zts-phpize
+peclconf %{_bindir}/zts-php-config
+make %{?_smp_mflags}
 %endif
+
 
 
 %install
@@ -143,32 +159,72 @@ install -Dpm 0644 %{SOURCE1} %{buildroot}%{php_inidir}/%{ini_name}
 install -Dpm 0644 %{SOURCE1} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
-rm -rf %{buildroot}%{php_incldir}/ext/%{pecl_name}/
-%if %{with_zts}
-rm -rf %{buildroot}%{php_ztsincldir}/ext/%{pecl_name}/
-%endif
-
-# Documentation
-for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
-do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+# Test & Documentation
+cd NTS
+for i in $(grep 'role="test"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
+do [ -f $i ]            && install -Dpm 644 $i            %{buildroot}%{pecl_testdir}/%{proj_name}/$i
+   [ -f tests/$i ]      && install -Dpm 644 tests/$i      %{buildroot}%{pecl_testdir}/%{proj_name}/tests/$i
+   [ -f tests/data/$i ] && install -Dpm 644 tests/data/$i %{buildroot}%{pecl_testdir}/%{proj_name}/tests/data/$i
+done
+for i in $(grep 'role="doc"' ../package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 $i %{buildroot}%{pecl_docdir}/%{proj_name}/$i
 done
 
-
 %check
-# simple module load test
-%{__php} \
-    --no-php-ini \
-    --define extension_dir=%{buildroot}%{php_extdir} \
-    --define extension=%{pecl_name}.so \
+#
+sed -e 's/134217960/1342179%d/' -i ?TS/tests/client026.phpt
+#sed -e '/sha3-/d' -i ?TS/tests/etag001.phpt
+
+export REPORT_EXIT_STATUS=1
+
+user=$(id -un)
+: all tests when rpmbuild is used
+if [ "$user" = "remi" ]; then
+export SKIP_ONLINE_TESTS=0
+else
+: only local tests when mock is used
+export SKIP_ONLINE_TESTS=1
+fi
+
+# Shared needed extensions
+modules=""
+for mod in hash iconv propro raphf; do
+  if [ -f %{php_extdir}/${mod}.so ]; then
+    modules="$modules -d extension=${mod}.so"
+  fi
+done
+
+: Minimal load test for NTS extension
+%{__php} --no-php-ini \
+    $modules \
+    --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
     --modules | grep %{pecl_name}
-%if %{with_zts}
-%{__ztsphp} \
-    --no-php-ini \
-    --define extension_dir=%{buildroot}%{php_ztsextdir} \
-    --define extension=%{pecl_name}.so \
-    --modules | grep %{pecl_name}
+
+%if %{with_tests}
+: Upstream test suite NTS extension
+cd NTS
+TEST_PHP_EXECUTABLE=%{__php} \
+TEST_PHP_ARGS="-n $modules -d extension=$PWD/modules/%{pecl_name}.so" \
+NO_INTERACTION=1 \
+%{__php} -n run-tests.php --show-diff
 %endif
 
+%if %{with_zts}
+: Minimal load test for ZTS extension
+%{__ztsphp} --no-php-ini \
+    $modules \
+    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
+    --modules | grep %{pecl_name}
+
+%if %{with_tests}
+: Upstream test suite ZTS extension
+cd ../ZTS
+TEST_PHP_EXECUTABLE=%{__ztsphp} \
+TEST_PHP_ARGS="-n $modules -d extension=$PWD/modules/%{pecl_name}.so" \
+NO_INTERACTION=1 \
+%{__ztsphp} -n run-tests.php --show-diff
+%endif
+%endif
 
 %if 0%{?fedora} < 24
 %post
@@ -187,7 +243,7 @@ fi
 
 
 %files
-%doc %{pecl_docdir}/%{pecl_name}
+%doc %{pecl_docdir}/%{proj_name}
 %{php_extdir}/%{pecl_name}.so
 %{pecl_xmldir}/%{pecl_name}.xml
 %config(noreplace) %verify(not md5 mtime size) %{php_inidir}/%{ini_name}
