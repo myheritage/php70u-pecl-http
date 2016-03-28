@@ -1,7 +1,7 @@
 %global pecl_name http
 %global proj_name pecl_http
 %global php_base php70u
-%global ini_name  40-%{pecl_name}.ini
+%global ini_name  41-%{pecl_name}.ini
 %global with_zts 0%{?__ztsphp:1}
 %ifarch %{arm}
 # Test suite disabled because of erratic results on slow ARM (timeout)
@@ -42,7 +42,6 @@ Requires(postun): %{php_base}-pear
 %endif
 Requires: php(zend-abi) = %{php_zend_api}
 Requires: php(api) = %{php_core_api}
-Requires: libevent%{_isa} > 2
 Requires: libcurl%{_isa}
 Requires: zlib%{_isa}
 Requires: %{php_base}-hash%{?_isa}
