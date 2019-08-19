@@ -26,9 +26,9 @@ Source1: %{pecl_name}.ini
 URL: http://pecl.php.net/package/%{pecl_name}
 BuildRequires: pear1u
 BuildRequires: %{php_base}-devel
-BuildRequires: %{php_base}-hash
-BuildRequires: %{php_base}-iconv
-BuildRequires: %{php_base}-spl
+#BuildRequires: %{php_base}-hash
+#BuildRequires: %{php_base}-iconv
+#BuildRequires: %{php_base}-spl
 BuildRequires: %{php_base}-pecl-propro-devel >= 1.0.0
 BuildRequires: %{php_base}-pecl-raphf-devel  >= 1.1.0
 # https://pecl.php.net/package-info.php?package=http&version=3.4.0RC2
