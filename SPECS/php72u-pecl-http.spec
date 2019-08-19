@@ -13,7 +13,7 @@
 
 Summary: Extended HTTP support
 Name: %{php_base}-pecl-%{pecl_name}
-Version: ${version}
+Version: %{version}
 Release: 1.MyHeritage.ius%{?dist}
 License: ASL 2.0
 Group: Development/Libraries
