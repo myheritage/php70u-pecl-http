@@ -1,6 +1,6 @@
 %global pecl_name http
 %global proj_name pecl_http
-%global php_base php72u
+%global php_base %{_php_base:php72u}
 %global ini_name  41-%{pecl_name}.ini
 %global with_zts 0%{?__ztsphp:1}
 %ifarch %{arm}
