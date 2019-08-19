@@ -1,7 +1,8 @@
 %global pecl_name http
 %global proj_name pecl_http
-%global php_base %{_php_base:php72u}
+%global php_base %{?_php_base}%{?!_php_base:php72u}
 %global ini_name  41-%{pecl_name}.ini
+%define version %{?_pecl_version}%{!?_pecl_version:3.0.1}
 %global with_zts 0%{?__ztsphp:1}
 %ifarch %{arm}
 # Test suite disabled because of erratic results on slow ARM (timeout)
@@ -34,6 +35,7 @@ BuildRequires: %{php_base}-pecl-raphf-devel  >= 1.1.0
 BuildRequires: pcre-devel
 BuildRequires: zlib-devel >= 1.2.0.4
 BuildRequires: curl-devel >= 7.18.2
+BuildRequires: libicu-devel
 BuildRequires: libidn-devel
 BuildRequires: libevent-devel  > 2
 %if 0%{?fedora} < 24
