@@ -2,7 +2,7 @@
 %global proj_name pecl_http
 %global php_base %{?_php_base}%{?!_php_base:php72u}
 %global ini_name  41-%{pecl_name}.ini
-%define version %{?_pecl_version}%{!?_pecl_version:3.0.1}
+%define version %{?_pecl_version}%{!?_pecl_version:3.2.1}
 %global with_zts 0%{?__ztsphp:1}
 %ifarch %{arm}
 # Test suite disabled because of erratic results on slow ARM (timeout)
