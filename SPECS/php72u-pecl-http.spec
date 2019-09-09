@@ -46,9 +46,9 @@ Requires: php(zend-abi) = %{php_zend_api}
 Requires: php(api) = %{php_core_api}
 Requires: libcurl%{_isa}
 Requires: zlib%{_isa}
-Requires: %{php_base}-hash%{?_isa}
-Requires: %{php_base}-iconv%{?_isa}
-Requires: %{php_base}-spl%{?_isa}
+# Requires: %{php_base}-hash%{?_isa}
+# Requires: %{php_base}-iconv%{?_isa}
+# Requires: %{php_base}-spl%{?_isa}
 Requires: %{php_base}-pecl(propro)%{?_isa} >= 1.0.0
 Requires: %{php_base}-pecl(raphf)%{?_isa}  >= 1.1.0
 # provide the stock name
